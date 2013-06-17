@@ -3,11 +3,22 @@ README
 
 This README discusses issues unique to NuttX configurations for the
 Atmel SAM4L Xplained Pro development board.  This board features the
-ATSAM4LC4C MCU
+ATSAM4LC4C MCU.
+
+The SAM4L Xplained Pro Starter Kit is bundled with four modules:
+
+1) I/O1   - An MMC/SD card slot, PWM LED control, ADC light sensor, UART
+            loopback, TWI AT30TSE758 Temperature sensor.
+2) OLED1  - An OLED plus 3 additional switches and 3 additional LEDs
+3) SLCD1  - A segment LCD that connects directly to the "EXT5 SEGMENT LCD"
+           connector
+4) PROTO1 - A prototyping board with logic on board (other than power-related
+            logic).
 
 Contents
 ^^^^^^^^
 
+  - Modules
   - Development Environment
   - GNU Toolchain Options
   - IDEs
@@ -18,6 +29,123 @@ Contents
   - Serial Consoles
   - SAM4L Xplained Pro-specific Configuration Options
   - Configurations
+
+Modules
+^^^^^^^
+  The SAM4L Xplained Pro Starter Kit is bundled with four modules:
+
+  I/O1
+  ----
+    The primary function of this module is to provide SD card support, but
+    the full list of modules features include:
+
+    - microSD card connector (SPI interface)
+    - PWM (LED control)
+    - ADC (light sensor)
+    - UART loopback
+    - TWI AT30TSE758 Temperature sensor with EEPROM
+
+    SPI is available on two of the SAM4L Xplained connectors, EXT1 and EXT2.
+    They mate with the I/O1 connector as indicated in this table.
+
+    I/O1 Connector
+    --------------
+    I/O1              EXT1                 EXT2                 Other use of either pin
+    ----------------- -------------------- -------------------- ------------------------------------
+    1  ID             1                    1
+    2  GND            2       GND          2
+    3  LIGHTSENSOR    3  PA04 ADCIFE/AD0   3  PA07 ADCIFE/AD2
+    4  LP_OUT         4  PA05 ADCIFE/AD1   4  PB02 ADCIFE/AD3
+    5  GPIO1          5  PB12 GPIO         5  PC08 GPIO         PB12 and PC8 on EXT5
+    6  GPIO2          6  PC02 GPIO         6  PB10 GPIO         PB10 on EXT5
+    7  LED            7  PC00 TC/1/A0      7  PC04 TC/1/A2
+    8  LP_IN          8  PC01 TC/1/B0      8  PC05 TC/1/B2      PC05 on EXT5
+    9  TEMP_ALERT     9  PC25 EIC/EXTINT2  9  PC06 EIC/EXTINT8  PC25 on EXT5
+    10 microSD_DETECT 10 PB13 SPI/NPCS1    10 PC09 GPIO         PB13 on EXT5
+    11 TWI SDA        11 PA23 TWIMS/0/TWD  11 PB14 TWIMS/3/TWD  PB14 on EXT3&4, PA23 and PB14 on EXT5
+    12 TWI SCL        12 PA24 TWIMS/0/TWCK 12 PB15 TWIMS/3/TWCK PB15 on EXT3&4, PA24 and PB15 on EXT5
+    13 UART RX        13 PB00 USART/0/RXD  13 PC26 USART/1/RXD  PB00 on EXT4, PC26 on EXT3&5
+    14 UART TX        14 PB01 USART/0/TXD  14 PC27 USART/1/TXD  PB01 on EXT4, PC27 on EXT3&5
+    15 microSD_SS     15 PC03 SPI/NPCS0    15 PB11 SPI/NPCS2    PB11 on EXT5
+    16 SPI_MOSI       16 PA22 SPI/MOSI     16 PA22 SPI/MOSI     PA22 on EXT5
+    17 SPI_MISO       17 PA21 SPI/MISO     17 PA21 SPI/MISO     PA21 on EXT5
+    18 SPI_SCK        18 PC30 SPI/SCK      18 PC30 SPI/SCK      PC30 on EXT5
+    19 GND            19      GND             GND
+    20 VCC            20      VCC             VCC
+
+    The mapping between the I/O1 pins and the SD connector are shown in the
+    following table.
+
+    SD Card Connection
+    ------------------
+    I/O1 SD   PIN Description
+    ---- ---- --- -------------------------------------------------
+         D2   1   Data line 2 (not used)
+    15   D3   2   Data line 3. Active low chip select, pulled high
+    16   CMD  3   Command line, connected to SPI_MOSI.
+    20   VDD  4
+    18   CLK  5   Clock line, connected to SPI_SCK.
+    2/19 GND  6
+    17   D0   7   Data line 0, connected to SPI_MISO.
+         D1   8   Data line 1 (not used)
+    10   SW_A 9   Card detect
+    2/19 SW_B 10  GND
+
+    Card Detect
+    -----------
+    When a microSD card is put into the connector SW_A and SW_B are short-
+    circuited. SW_A is connected to the microSD_DETECT signal. To use this
+    as a card indicator remember to enable internal pullup in the target
+    device.
+
+    GPIOs
+    -----
+    So all that is required to connect the SD is configure the SPI
+
+    PIN EXT1           EXT2            Description
+    --- -------------- --------------- -------------------------------------
+    15  PC03 SPI/NPCS0 PB11 SPI/NPCS2  Active low chip select OUTPUT, pulled
+                                       high on board.
+    10  PB13 SPI/NPCS1 10 PC09 GPIO    Active low card detect INPUT, must
+                                       use internal pull-up.
+
+    Configuration Options:
+    ----------------------
+      CONFIG_SAM4L_XPLAINED_IOMODULE=y      : Informs the system that the
+                                              I/O1 module is installed
+      CONFIG_SAM4L_XPLAINED_IOMODULE_EXT1=y : The module is installed in EXT1
+      CONFIG_SAM4L_XPLAINED_IOMODULE_EXT2=y : The mdoule is installed in EXT2
+
+    NOTE: As of this writing, only the SD card slot is supported in the I/O1
+    module.
+
+  OLED1
+  -----
+    This module provides an OLED plus 3 additional switches and 3 additional\
+    LEDs.
+
+    Configuration Options:
+    ----------------------
+      CONFIG_SAM4L_XPLAINED_OLED1MODULE=y   : Informs the system that the
+                                              I/O1 module is installed
+
+    NOTE: As of this writing, the OLED1 module is not supported.
+
+  SLCD1
+  -----
+    This module provides a A segment LCD that connects directly to the "EXT5 SEGMENT LCD"
+           connector
+    Configuration Options:
+    ----------------------
+      CONFIG_SAM4L_XPLAINED_SLCD1MODULE=y   : Informs the system that the
+                                              I/O1 module is installed
+
+    NOTE: As of this writing, the SLCD1 module is not supported.
+
+  PROTO1
+  ------
+  A prototyping board with logic on board (other than power-related logic).
+  There is no built-in support for the PROTO1 module.
 
 Development Environment
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -43,18 +171,25 @@ GNU Toolchain Options
   add one of the following configuration options to your .config (or defconfig)
   file:
 
-    CONFIG_SAM34_CODESOURCERYW=y  : CodeSourcery under Windows
-    CONFIG_SAM34_CODESOURCERYL=y  : CodeSourcery under Linux
-    CONFIG_SAM34_DEVKITARM=y      : devkitARM under Windows
-    CONFIG_SAM34_BUILDROOT=y      : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y  : CodeSourcery under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYL=y  : CodeSourcery under Linux
+    CONFIG_ARMV7M_TOOLCHAIN_ATOLLIC=y        : Atollic toolchain for Windos
+    CONFIG_ARMV7M_TOOLCHAIN_DEVKITARM=y      : devkitARM under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y      : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y      : Generic GCC ARM EABI toolchain for Linux
+    CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIW=y      : Generic GCC ARM EABI toolchain for Windows
 
-  If you are not using CONFIG_SAM34_BUILDROOT, then you may also have to modify
-  the PATH in the setenv.h file if your make cannot find the tools.
+  If you are not using CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT, then you may also
+  have to modify the PATH in the setenv.h file if your make cannot find the tools.
 
-  NOTE: the CodeSourcery (for Windows), devkitARM, and Raisonance toolchains are
-  Windows native toolchains.  The CodeSourcey (for Linux) and NuttX buildroot
-  toolchains are Cygwin and/or Linux native toolchains. There are several limitations
-  to using a Windows based toolchain in a Cygwin environment.  The three biggest are:
+  NOTE about Windows native toolchains
+  ------------------------------------
+
+  The CodeSourcery (for Windows), Atollic, and devkitARM toolchains are
+  Windows native toolchains.  The CodeSourcery (for Linux), NuttX buildroot,
+  and, perhaps, the generic GCC toolchains are Cygwin and/or Linux native
+  toolchains. There are several limitations to using a Windows based
+  toolchain in a Cygwin environment.  The three biggest are:
 
   1. The Windows toolchain cannot follow Cygwin paths.  Path conversions are
      performed automatically in the Cygwin makefiles using the 'cygpath' utility
@@ -93,7 +228,7 @@ IDEs
   NuttX is built using command-line make.  It can be used with an IDE, but some
   effort will be required to create the project (There is a simple RIDE project
   in the RIDE subdirectory).
-  
+
   Makefile Build
   --------------
   Under Eclipse, it is pretty easy to set up an "empty makefile project" and
@@ -190,7 +325,7 @@ NXFLAT Toolchain
   tools -- just the NXFLAT tools.  The buildroot with the NXFLAT tools can
   be downloaded from the NuttX SourceForge download site
   (https://sourceforge.net/projects/nuttx/files/).
- 
+
   This GNU toolchain builds and executes in the Linux or Cygwin environment.
 
   1. You must have already configured Nuttx in <some-dir>/nuttx.
@@ -249,9 +384,9 @@ Serial Consoles
   USART0
   ------
 
-  USART is available on connectors EXT1 and EXT4
+  USART0 is available on connectors EXT1 and EXT4
 
-    EXT1  TXT4  GPIO  Function
+    EXT1  EXT4  GPIO  Function
     ----  ---- ------ -----------
      13    13   PB00  USART0_RXD
      14    14   PB01  USART0_TXD
@@ -460,64 +595,138 @@ Configurations
     b. Execute 'make menuconfig' in nuttx/ in order to start the
        reconfiguration process.
 
+  NOTES:
+
+  1. These configurations use the mconf-based configuration tool.  To
+    change any of these configurations using that tool, you should:
+
+    a. Build and install the kconfig-mconf tool.  See nuttx/README.txt
+       and misc/tools/
+
+    b. Execute 'make menuconfig' in nuttx/ in order to start the
+       reconfiguration process.
+
+  2. Unless stated otherwise, all configurations generate console
+     output of on USART0 which is available on EXT1 or EXT4 (see the
+     section "Serial Consoles" above).  The virtual COM port could
+     be used, instead, by reconfiguring to use USART1 instead of
+     USART0:
+
+       System Type -> AT91SAM3/4 Peripheral Support
+         CONFIG_SAM_USART0=y
+         CONFIG_SAM_USART1=n
+
+       Device Drivers -> Serial Driver Support -> Serial Console
+         CONFIG_USART0_SERIAL_CONSOLE=y
+
+       Device Drivers -> Serial Driver Support -> USART0 Configuration
+         CONFIG_USART0_2STOP=0
+         CONFIG_USART0_BAUD=115200
+         CONFIG_USART0_BITS=8
+         CONFIG_USART0_PARITY=0
+         CONFIG_USART0_RXBUFSIZE=256
+         CONFIG_USART0_TXBUFSIZE=256
+
+  3. Unless otherwise stated, the configurations are setup for
+     Linux (or any other POSIX environment like Cygwin under Windows):
+
+     Build Setup:
+       CONFIG_HOST_LINUX=y   : Linux or other POSIX environment
+
+  4. These configurations use the older, OABI, buildroot toolchain.  But
+     that is easily reconfigured:
+
+     System Type -> Toolchain:
+       CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot toolchain
+       CONFIG_ARMV7M_OABI_TOOLCHAIN=y      : Older, OABI toolchain
+
+     If you want to use the Atmel GCC toolchain, here are the steps to
+     do so:
+
+     Build Setup:
+       CONFIG_HOST_WINDOWS=y   : Windows
+       CONFIG_HOST_CYGWIN=y    : Using Cygwin or other POSIX environment
+
+     System Type -> Toolchain:
+       CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIW=y : General GCC EABI toolchain under windows
+
+     This re-configuration should be done before making NuttX or else the
+     subsequent 'make' will fail.  If you have already attempted building
+     NuttX then you will have to 1) 'make distclean' to remove the old
+     configuration, 2) 'cd tools; ./configure.sh sam3u-ek/ksnh' to start
+     with a fresh configuration, and 3) perform the configuration changes
+     above.
+
+     Also, make sure that your PATH variable has the new path to your
+     Atmel tools.  Try 'which arm-none-eabi-gcc' to make sure that you
+     are selecting the right tool.  setenv.sh is available for you to
+     use to set or PATH variable.  The path in the that file may not,
+     however, be correct for your installation.
+
+     See also the "NOTE about Windows native toolchains" in the section call
+     "GNU Toolchain Options" above.
+
 Configuration sub-directories
 -----------------------------
 
   ostest:
     This configuration directory performs a simple OS test using
-    examples/ostest.
+    examples/ostest.  See NOTES above.
 
     NOTES:
-
-    1. This configuration provides test output on USART0 which is available
-       on EXT1 or EXT4 (see the section "Serial Consoles" above).  The
-       virtual COM port could be used, instead, by reconfiguring to use
-       USART1 instead of USART0:
-
-       System Type -> AT91SAM3/4 Peripheral Support
-         CONFIG_SAM_USART0=y
-         CONFIG_SAM_USART1=n
-
-       Device Drivers -> Serial Driver Support -> Serial Console
-         CONFIG_USART0_SERIAL_CONSOLE=y
-
-       Device Drivers -> Serial Driver Support -> USART0 Configuration
-         CONFIG_USART0_2STOP=0
-         CONFIG_USART0_BAUD=115200
-         CONFIG_USART0_BITS=8
-         CONFIG_USART0_PARITY=0
-         CONFIG_USART0_RXBUFSIZE=256
-         CONFIG_USART0_TXBUFSIZE=256
-
-    2. This configuration is set up to use the NuttX OABI toolchain (see
-       above). Of course this can be reconfigured if you prefer a different
-       toolchain.
 
   nsh:
-    This configuration directory will built the NuttShell.
+    This configuration directory will built the NuttShell.  See NOTES above
+    and below:
 
-    NOTES:
+    NOTE:
+    If the I/O1 module is connected to the SAM4L Xplained Pro, then support
+    for the SD card slot can be enabled by making the following changes
+    to the configuration:
 
-    1. This configuration provides test output on USART0 which is available
-       on EXT1 or EXT4 (see the section "Serial Consoles" above).  The
-       virtual COM port could be used, instead, by reconfiguring to use
-       USART1 instead of USART0:
+      File Systems:
+        CONFIG_FS_FAT=y                   : Enable the FAT file system
+        CONFIG_FAT_LCNAMES=y              : Enable upper/lower case 8.3 file names (Optional, see below)
+        CONFIG_FAT_LFN=y                  : Enable long file named (Optional, see below)
+        CONFIG_FAT_MAXFNAME=32            : Maximum supported file name length
 
-       System Type -> AT91SAM3/4 Peripheral Support
-         CONFIG_SAM_USART0=y
-         CONFIG_SAM_USART1=n
+        There are issues related to patents that Microsoft holds on FAT long
+        file name technologies.  See the top level COPYING file for further
+        details.
 
-       Device Drivers -> Serial Driver Support -> Serial Console
-         CONFIG_USART0_SERIAL_CONSOLE=y
+      System Type -> Peripherals:
+        CONFIG_SAM34_SPI=y                : Enable the SAM4L SPI peripheral
 
-       Device Drivers -> Serial Driver Support -> USART0 Configuration
-         CONFIG_USART0_2STOP=0
-         CONFIG_USART0_BAUD=115200
-         CONFIG_USART0_BITS=8
-         CONFIG_USART0_PARITY=0
-         CONFIG_USART0_RXBUFSIZE=256
-         CONFIG_USART0_TXBUFSIZE=256
+      Board Selection -> Common Board Options
+        CONFIG_NSH_MMCSDSLOTNO=0          : Only one MMC/SD slot, slot 0
+        CONFIG_NSH_MMCSDSPIPORTNO=0       : Use CS=0 if the I/O1 is in EXT1, OR
+        CONFIG_NSH_MMCSDSPIPORTNO=2       : Use CS=2 if the I/O1 is in EXT2
 
-    2. This configuration is set up to use the NuttX OABI toolchain (see
-       above). Of course this can be reconfigured if you prefer a different
-       toolchain.
+      Board Selection -> SAM4L Xplained Pro Modules
+        CONFIG_SAM4L_XPLAINED_IOMODULE=y      : I/O1 module is connected
+        CONFIG_SAM4L_XPLAINED_IOMODULE_EXT1=y : In EXT1, or EXT2
+        CONFIG_SAM4L_XPLAINED_IOMODULE_EXT2=y
+
+      Device Drivers
+        CONFIG_SPI=y                      : Enable SPI support
+        CONFIG_SPI_EXCHANGE=y             : The exchange() method is supported
+        CONFIG_SPI_OWNBUS=y               : Smaller code if this is the only SPI device
+
+        CONFIG_MMCSD=y                    : Enable MMC/SD support
+        CONFIG_MMCSD_NSLOTS=1             : Only one MMC/SD card slot
+        CONFIG_MMCSD_MULTIBLOCK_DISABLE=y : I tested this way, but this may not be required
+        CONFIG_MMCSD_HAVECARDDETECT=y     : I/O1 module as a card detect GPIO
+        CONFIG_MMCSD_SPI=y                : Use the SPI interface to the MMC/SD card
+        CONFIG_MMCSD_SPICLOCK=20000000    : This is a guess for the optimal MMC/SD frequency
+
+      Application Configuration -> NSH Library
+        CONFIG_NSH_ARCHINIT=y             : Board has architecture-specific initialization
+
+      NOTE: If you enable the I/O1 this configuration with USART0 as the
+      console and with the I/O1 module in EXT1, you *must* remove UART
+      jumper.  Otherwise, you have lookpack on USART0 and NSH will *not*
+      behave very well (since its outgoing prompts also appear as incoming
+      commands).
+
+      STATUS:  As of 2013-6-16, the SPI interface is not communicating with
+      the SD card.

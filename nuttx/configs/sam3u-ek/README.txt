@@ -13,6 +13,7 @@ Contents
   - NuttX EABI "buildroot" Toolchain
   - NuttX OABI "buildroot" Toolchain
   - NXFLAT Toolchain
+  - AtmelStudio6.1
   - LEDs
   - SAM3U-EK-specific Configuration Options
   - Configurations
@@ -37,22 +38,29 @@ GNU Toolchain Options
 
   All testing has been conducted using the NuttX buildroot toolchain.  However,
   the make system is setup to default to use the devkitARM toolchain.  To use
-  the CodeSourcery, devkitARM or Raisonance GNU toolchain, you simply need to
-  add one of the following configuration options to your .config (or defconfig)
-  file:
+  the CodeSourcery, devkitARM, Atollic, or AtmelStudio GNU toolchain, you simply
+  need to add one of the following configuration options to your .config (or
+  defconfig) file:
 
-    CONFIG_SAM34_CODESOURCERYW=y  : CodeSourcery under Windows
-    CONFIG_SAM34_CODESOURCERYL=y  : CodeSourcery under Linux
-    CONFIG_SAM34_DEVKITARM=y      : devkitARM under Windows
-    CONFIG_SAM34_BUILDROOT=y      : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYW=y  : CodeSourcery under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_CODESOURCERYL=y  : CodeSourcery under Linux
+    CONFIG_ARMV7M_TOOLCHAIN_ATOLLIC=y        : Atollic toolchain for Windos
+    CONFIG_ARMV7M_TOOLCHAIN_DEVKITARM=y      : devkitARM under Windows
+    CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y      : NuttX buildroot under Linux or Cygwin (default)
+    CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIL=y      : Generic GCC ARM EABI toolchain for Linux
+    CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIW=y      : Generic GCC ARM EABI toolchain for Windows
 
-  If you are not using CONFIG_SAM34_BUILDROOT, then you may also have to modify
+  If you are not using CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT, then you may also have to modify
   the PATH in the setenv.h file if your make cannot find the tools.
 
-  NOTE: the CodeSourcery (for Windows), devkitARM, and Raisonance toolchains are
-  Windows native toolchains.  The CodeSourcey (for Linux) and NuttX buildroot
-  toolchains are Cygwin and/or Linux native toolchains. There are several limitations
-  to using a Windows based toolchain in a Cygwin environment.  The three biggest are:
+  NOTE about Windows native toolchains
+  ------------------------------------
+
+  The CodeSourcery (for Windows), Atollic, and devkitARM toolchains are
+  Windows native toolchains.  The CodeSourcery (for Linux), NuttX buildroot,
+  and, perhaps, the generic GCC toolchains are Cygwin and/or Linux native
+  toolchains. There are several limitations to using a Windows based
+  toolchain in a Cygwin environment.  The three biggest are:
 
   1. The Windows toolchain cannot follow Cygwin paths.  Path conversions are
      performed automatically in the Cygwin makefiles using the 'cygpath' utility
@@ -213,12 +221,32 @@ NXFLAT Toolchain
   8. Edit setenv.h, if necessary, so that the PATH variable includes
      the path to the newly builtNXFLAT binaries.
 
+AtmelStudio6.1
+^^^^^^^^^^^^^^
+
+  You can use AtmelStudio6.1 to load and debug code.
+
+  - To load code:
+
+    Tools -> Device Programming
+
+    Configure the debugger and chip and you are in business.
+
+  - To Debug Code:
+
+    File -> Open -> Open Object File for Debugging
+
+    Select the project name, the full path to the NuttX object (called
+    just nuttx with no extension), and chip.  Take the time to resolve
+    all of the source file linkages or else you will not have source
+    level debug!
+
 LEDs
 ^^^^
 
-The SAM3U-EK board has four LEDs labeled LD1, LD2, LD3 and LD4 on the
-the board.  Usage of these LEDs is defined in include/board.h and src/up_leds.c.
-They are encoded as follows:
+  The SAM3U-EK board has four LEDs labeled LD1, LD2, LD3 and LD4 on the
+  the board.  Usage of these LEDs is defined in include/board.h and src/up_leds.c.
+  They are encoded as follows:
 
     SYMBOL              Meaning                 LED0*   LED1    LED2
     ------------------- ----------------------- ------- ------- -------
@@ -403,7 +431,46 @@ Configurations
        reconfiguration process.
 
   2. Unless stated otherwise, all configurations generate console
-     output of UART0 (J3).
+     output on UART0 (J3).
+
+  3. Unless otherwise stated, the configurations are setup for
+     Linux (or any other POSIX environment like Cygwin under Windows):
+
+     Build Setup:
+       CONFIG_HOST_LINUX=y   : Linux or other POSIX environment
+
+  4. These configurations use the older, OABI, buildroot toolchain.  But
+     that is easily reconfigured:
+
+     System Type -> Toolchain:
+       CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot toolchain
+       CONFIG_ARMV7M_OABI_TOOLCHAIN=y      : Older, OABI toolchain
+
+     If you want to use the Atmel GCC toolchain, here are the steps to
+     do so:
+
+     Build Setup:
+       CONFIG_HOST_WINDOWS=y   : Windows
+       CONFIG_HOST_CYGWIN=y    : Using Cygwin or other POSIX environment
+
+     System Type -> Toolchain:
+       CONFIG_ARMV7M_TOOLCHAIN_GNU_EABIW=y : General GCC EABI toolchain under windows
+
+     This re-configuration should be done before making NuttX or else the
+     subsequent 'make' will fail.  If you have already attempted building
+     NuttX then you will have to 1) 'make distclean' to remove the old
+     configuration, 2) 'cd tools; ./configure.sh sam3u-ek/ksnh' to start
+     with a fresh configuration, and 3) perform the configuration changes
+     above.
+
+     Also, make sure that your PATH variable has the new path to your
+     Atmel tools.  Try 'which arm-none-eabi-gcc' to make sure that you
+     are selecting the right tool.  setenv.sh is available for you to
+     use to set or PATH variable.  The path in the that file may not,
+     however, be correct for your installation.
+
+     See also the "NOTE about Windows native toolchains" in the section call
+     "GNU Toolchain Options" above.
 
 Configuration sub-directories
 -----------------------------
@@ -424,13 +491,7 @@ Configuration sub-directories
 
     NOTES:
 
-    1. This configuration uses the older, OABI, buildroot toolchain.  But
-       that is easily reconfigured:
-
-       CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot toolchain
-       CONFIG_ARMV7M_OABI_TOOLCHAIN=y      : Older, OABI toolchain
-
-    2. At the end of the build, there will be several files in the top-level
+    1. At the end of the build, there will be several files in the top-level
        NuttX build directory:
 
        PASS1:
@@ -446,7 +507,7 @@ Configuration sub-directories
        The J-Link programmer will except files in .hex, .mot, .srec, and .bin
        formats.
 
-    3. Combining .hex files.  If you plan to use the .hex files with your
+    2. Combining .hex files.  If you plan to use the .hex files with your
        debugger or FLASH utility, then you may need to combine the two hex
        files into a single .hex file.  Here is how you can do that.
 
@@ -496,14 +557,7 @@ Configuration sub-directories
 
     NOTES:
 
-    1. This configuration uses the older, OABI, buildroot toolchain.  But
-       that is easily reconfigured:
-
-       System Type:
-         CONFIG_ARMV7M_TOOLCHAIN_BUILDROOT=y : Buildroot toolchain
-         CONFIG_ARMV7M_OABI_TOOLCHAIN=y      : Older, OABI toolchain
-
-    2. NSH built-in applications are supported.  However, there are
+    1. NSH built-in applications are supported.  However, there are
        no built-in applications built with the default configuration.
 
        Binary Formats:
@@ -512,26 +566,31 @@ Configuration sub-directories
        Applicaton Configuration:
          CONFIG_NSH_BUILTIN_APPS=y           : Enable starting apps from NSH command line
 
-    3. This configuration has been used for verifying the touchscreen on
+    2. This configuration has been used for verifying the touchscreen on
        on the SAM3U-EK LCD.  With these modifications, you can include the
        touchscreen test program at apps/examples/touchscreen as an NSH built-in
        application.  You can enable the touchscreen and test by modifying the
        default configuration in the following ways:
 
-          Drivers:
+          Device Drivers
+            CONFIG_SPI=y                      : Enable SPI support
+            CONFIG_SPI_EXCHANGE=y             : The exchange() method is supported
+            CONFIG_SPI_OWNBUS=y               : Smaller code if this is the only SPI device
+
             CONFIG_INPUT=y                    : Enable support for input devices
             CONFIG_INPUT_ADS7843E=y           : Enable support for the XPT2048
-            CONFIG_ADS7843E_SPIDEV=0          : Use SPI for communication
+            CONFIG_ADS7843E_SPIDEV=2          : Use SPI CS 2 for communication
             CONFIG_ADS7843E_SPIMODE=0         : Use SPI mode 0
+            CONFIG_ADS7843E_FREQUENCY=1000000 : SPI BAUD 1MHz
             CONFIG_ADS7843E_THRESHX=39        : These will probably need to be tuned
             CONFIG_ADS7843E_THRESHY=51
-            CONFIG_SPI=y                      : Enable SPI support
-            CONFIG_SPI_EXCHANGE=n             : exchange() method is not supported
+
+          System Type -> Peripherals:
+            CONFIG_SAM34_SPI=y                : Enable support for SPI
 
           System Type:
             CONFIG_GPIO_IRQ=y                 : GPIO interrupt support
             CONFIG_GPIOA_IRQ=y                : Enable GPIO interrupts from port A
-            CONFIG_SAM34_SPI=y                : Enable support for SPI
 
           RTOS Features:
             CONFIG_DISABLE_SIGNALS=n          : Signals are required
@@ -550,13 +609,25 @@ Configuration sub-directories
             CONFIG_DEBUG_VERBOSE=y            : Enable verbose debug output
             CONFIG_DEBUG_INPUT=y              : Enable debug output from input devices
 
-          NOTE:
-            As of this writing, the touchscreen is not functional (no
-            interrupts).  More work is needed.
+          STATUS:
+            2013-6-16: The touchscreen is not functional. It seems to
+            perform good measurements but I am not getting the /PENIRQ
+            interrupt.  The interrupt is set up correctly (I can ground
+            A24 and I get the interrupt), so apparently the ADS7843E is
+            not generating interrupts.
 
   nx:
     Configures to use examples/nx using the HX834x LCD hardware on
     the SAM3U-EK development board.
+
+    STATUS:
+      This configuration used to work well in an older NuttX version
+      on an older SAM3U-EK board (my old board was bricked and I got
+      another after a lapse of a couple of years).  But now it no
+      longer works!  There appears to be some bug, perhaps a memory
+      clobbering bug, that causes a variety of symptons:  Hangs on
+      UART0 or hard faults.  The LCD functionality is basically intact,
+      but not usable because of these problems.
 
   ostest:
     This configuration directory, performs a simple OS test using
