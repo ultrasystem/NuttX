@@ -2517,6 +2517,21 @@ config SDIO_WIDTH_D1_ONLY
 
 endmenu
 
+menu "CAN Configuration"
+	depends on STM32_CAN
+
+config CAN1_BAUD
+	depends on STM32_CAN1
+	int "Baud rate for CAN1"
+	default 250000
+
+config CAN2_BAUD
+	depends on STM32_CAN2
+	int "Baud rate for CAN2"
+	default 250000
+
+endmenu
+
 if STM32_ETHMAC
 menu "Ethernet MAC configuration"
 
