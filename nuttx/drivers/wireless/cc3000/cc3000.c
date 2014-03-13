@@ -1066,7 +1066,7 @@ errout_without_sem:
 #ifndef CONFIG_DISABLE_POLL
   if (nread > 0)
     {
-      cc3000_pollnotify(priv, POLLOUT);
+      //cc3000_pollnotify(priv, POLLOUT);
     }
 #endif
 
