@@ -457,6 +457,7 @@ static int rtc_setup(void)
   /* Enable the RTC Clock by setting the RTCEN bit in the RCC BDCR register */
   modifyreg32(STM32_RCC_BDCR, 0, RCC_BDCR_RTCEN);
 #else
+  stm32_pwr_enablebkp();
   stm32_rcc_enablelse();
 #endif
 
