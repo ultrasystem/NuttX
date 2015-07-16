@@ -132,6 +132,9 @@ int group_setupidlefiles(FAR struct task_tcb_s *tcb)
         {
           slldbg("Failed to open /dev/console: %d\n", errno);
         }
+#if defined(CONFIG_NO_SERIAL_CONSOLE) || defined(CONFIG_CDCACM_CONSOLE)
+      return OK;
+#endif
       return -ENFILE;
     }
 #endif
